@@ -1,2 +1,6 @@
+def f(w, a):
+    print(w)
+    return None
 
-print("hello, world")
+
+print(f(10, 20))

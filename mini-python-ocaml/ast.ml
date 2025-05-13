@@ -14,8 +14,8 @@ type unop =
   | Unot (** not e *)
 
 type binop =
-  | Badd | Bsub | Bmul | Bdiv | Bmod    (** + - * // % *)
-  | Beq | Bneq | Blt | Ble | Bgt | Bge  (** == != < <= > >= *)
+| Badd | Bsub | Bmul | Bdiv | Bmod    (** + - * // % *)
+| Beq | Bneq | Blt | Ble | Bgt | Bge  (** == != < <= > >= *)
   | Band | Bor                          (** and or *)
 
 type constant =
@@ -58,6 +58,7 @@ type var = {
   v_name: string;
   mutable v_ofs: int; (** position wrt %rbp *)
 }
+
 
 (** Similarly, all the occurrences of a given function all point
    to a single record of the following type. *)
