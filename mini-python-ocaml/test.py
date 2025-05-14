@@ -1,6 +1,3 @@
-def f(w, a):
-    print(w)
-    return None
-
-
-print(f(10, 20))
+def f(x):
+    return f()
+print(0)

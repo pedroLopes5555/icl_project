@@ -1,4 +1,3 @@
-
 open Ast
 module H = Hashtbl
 
@@ -40,6 +39,8 @@ let rec expr (ctx: var_env) (e: Ast.expr) =
       TEbinop (op, expr ctx e1, expr ctx e2)
   | Eunop (op, e) ->
       TEunop (op, expr ctx e)
+  | Ecall ({ id = "list"; _ }, [Ecall ({ id = "range"; _ }, [e])]) ->
+      TErange (expr ctx e)
   | Ecall (f, args) -> begin
       try
         let fn = H.find fn_env f.id in
@@ -65,20 +66,9 @@ let rec stmt (ctx: var_env) (s: Ast.stmt) : Ast.tstmt =
       TSprint (expr ctx e)
   | Sblock sl ->
       TSblock (List.map (stmt ctx) sl)
-      | Sfor (x, e, s) ->
-        (* Lookup the loop variable in the typing environment*)
-        let v = H.find ctx x.id in
-        (* Type-check the expression we're iterating over.
-           This could be a list, a call to range(...), etc. *)
-        let te = expr ctx e in
-        (* Recursively type-check the body of the loop. *)
-        let ts = stmt ctx s in
-        (* Construct the typed for-loop node with:
-           - the loop variable `v`,
-           - the typed iterable expression `te`,
-           - and the typed loop body `ts`. *)
-        TSfor (v, te, ts)
-    
+  | Sfor (x, e, s) -> 
+    let v = H.find ctx x.id (* this should never fail *) in
+    TSfor (v, expr ctx e, stmt ctx s)
   | Seval e ->
       TSeval (expr ctx e)
   | Sset (e1, e2, e3) ->
