@@ -26,8 +26,7 @@ F_f:
 	movq 16(%rbp), %rdi
 	call P_print
 	call P_print_newline
-	movq 0(%rbp), %rdi
-	movq %rdi, %rax
+	movq $C_None, %rdi
 	movq %rdi, %rax
 	jmp L_1
 L_1:
@@ -100,11 +99,7 @@ S_message_int:
   .string    "%d"
 S_newline:
   .string    "\n"
+S_StringNone:
+.string    "None"
 C_None:
-  .quad   0
-C_True
-  .quad   1
-  .quad   1
-C_False
-  .quad   1
   .quad   0

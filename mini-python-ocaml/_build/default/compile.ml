@@ -72,15 +72,18 @@ S_message_int:
   .string    \"%d\"
 S_newline:
   .string    \"\\n\"
+S_StringNone:
+.string    \"None\"
 C_None:
+  .quad   0
+"
+
+(*C_False
+  .quad   1
   .quad   0
 C_True
   .quad   1
-  .quad   1
-C_False
-  .quad   1
-  .quad   0
-"
+  .quad   1*)
 
 let leave =
   movq (reg rbp) (reg rsp) ++ popq rbp ++ ret
@@ -139,8 +142,7 @@ let rec compile_expr (e: Ast.texpr) =
       movq (imm64 n) (reg rdi) ++ call "P_alloc_int" ++
       movq (reg rax) (reg rdi)
   | TEcst Cnone -> 
-      movq (ind ~ofs:0 rbp) (reg rdi) ++
-      movq (reg rdi) (reg rax)  
+    movq (ilab "C_None") (reg rdi)
   | TEcst _ -> assert false (* TODO *)
   | TEvar x -> 
       movq (ind ~ofs:x.v_ofs rbp) (reg rdi)

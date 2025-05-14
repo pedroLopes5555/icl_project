@@ -76,13 +76,14 @@ S_StringNone:
 .string    \"None\"
 C_None:
   .quad   0
-C_False
+"
+
+(*C_False
   .quad   1
   .quad   0
 C_True
   .quad   1
-  .quad   1
-"
+  .quad   1*)
 
 let leave =
   movq (reg rbp) (reg rsp) ++ popq rbp ++ ret
