@@ -43,10 +43,15 @@ let rec expr (ctx: var_env) (e: Ast.expr) =
     TErange (expr ctx e)
   | Ecall (f, args) -> begin
     try
+      (*check how many arguments we have saved, 
+      and compare whit the ammount we are getting,
+      by checking the list lenght*)
       let fn = H.find fn_env f.id in
       let targs = List.map (expr ctx) args in
+      
       let expected = List.length fn.fn_params in
       let given = List.length targs in
+
       if expected <> given then
         error ~loc:f.loc "Function %s expects %d argument(s), but got %d"
           f.id expected given;
@@ -97,7 +102,13 @@ let rec alloc_vars ctx (s: Ast.stmt) =
   | Sprint _ | Sreturn _ | Seval _ | Sset (_, _, _) -> ()
 
 let def (f, args, body) =
-  let mk_var x = { v_name = x.id; v_ofs = -1 } in
+  let seen = H.create 16 in
+  let mk_var x =
+    if H.mem seen x.id then
+      error ~loc:x.loc "Duplicate parameter name %s" x.id;
+    H.add seen x.id ();
+    { v_name = x.id; v_ofs = -1 }
+  in
   let targs = List.map mk_var args in
   let fn = { fn_name = f.id; fn_params = targs } in
   H.add fn_env f.id fn;

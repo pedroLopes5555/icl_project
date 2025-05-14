@@ -102,7 +102,13 @@ let rec alloc_vars ctx (s: Ast.stmt) =
   | Sprint _ | Sreturn _ | Seval _ | Sset (_, _, _) -> ()
 
 let def (f, args, body) =
-  let mk_var x = { v_name = x.id; v_ofs = -1 } in
+  let seen = H.create 16 in
+  let mk_var x =
+    if H.mem seen x.id then
+      error ~loc:x.loc "Duplicate parameter name %s" x.id;
+    H.add seen x.id ();
+    { v_name = x.id; v_ofs = -1 }
+  in
   let targs = List.map mk_var args in
   let fn = { fn_name = f.id; fn_params = targs } in
   H.add fn_env f.id fn;
