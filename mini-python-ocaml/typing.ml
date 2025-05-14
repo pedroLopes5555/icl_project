@@ -65,7 +65,20 @@ let rec stmt (ctx: var_env) (s: Ast.stmt) : Ast.tstmt =
       TSprint (expr ctx e)
   | Sblock sl ->
       TSblock (List.map (stmt ctx) sl)
-  | Sfor (x, e, s) -> assert false (* TODO *)
+      | Sfor (x, e, s) ->
+        (* Lookup the loop variable in the typing environment*)
+        let v = H.find ctx x.id in
+        (* Type-check the expression we're iterating over.
+           This could be a list, a call to range(...), etc. *)
+        let te = expr ctx e in
+        (* Recursively type-check the body of the loop. *)
+        let ts = stmt ctx s in
+        (* Construct the typed for-loop node with:
+           - the loop variable `v`,
+           - the typed iterable expression `te`,
+           - and the typed loop body `ts`. *)
+        TSfor (v, te, ts)
+    
   | Seval e ->
       TSeval (expr ctx e)
   | Sset (e1, e2, e3) ->

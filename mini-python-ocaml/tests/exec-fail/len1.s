@@ -3,8 +3,12 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $42, %rdi
+	movq $1, %rdi
 	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_len
+	addq $8, %rsp
 	movq %rax, %rdi
 	call P_print
 	call P_print_newline
