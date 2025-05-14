@@ -40,13 +40,24 @@ let rec expr (ctx: var_env) (e: Ast.expr) =
   | Eunop (op, e) ->
       TEunop (op, expr ctx e)
   | Ecall ({ id = "list"; _ }, [Ecall ({ id = "range"; _ }, [e])]) ->
-      TErange (expr ctx e)
+    TErange (expr ctx e)
   | Ecall (f, args) -> begin
-      try
-        let fn = H.find fn_env f.id in
-        TEcall (fn, List.map (expr ctx) args)
-      with Not_found ->
-        error ~loc:f.loc "Function %s " f.id " not found"
+    try
+      (*check how many arguments we have saved, 
+      and compare whit the ammount we are getting,
+      by checking the list lenght*)
+      let fn = H.find fn_env f.id in
+      let targs = List.map (expr ctx) args in
+      
+      let expected = List.length fn.fn_params in
+      let given = List.length targs in
+
+      if expected <> given then
+        error ~loc:f.loc "Function %s expects %d argument(s), but got %d"
+          f.id expected given;
+      TEcall (fn, targs)
+    with Not_found ->
+      error ~loc:f.loc "Function %s not found" f.id
     end
   | Elist e ->
       TElist (List.map (expr ctx) e)
