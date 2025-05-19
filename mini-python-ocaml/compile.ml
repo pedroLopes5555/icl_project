@@ -175,17 +175,34 @@ let rec compile_expr (e: Ast.texpr) =
 
 
 
-      | Bmul ->
-        compile_expr e1 ++               (* result in %rdi *)
-        movq (reg rdi) (reg rbx) ++      (* save boxed e1 in %rbx *)
-        compile_expr e2 ++               (* result in %rdi *)
-        movq (reg rdi) (reg rcx) ++      (* save boxed e2 in %rcx *)
+    | Bmul ->
+      compile_expr e1 ++               (* result in %rdi *)
+      movq (reg rdi) (reg rbx) ++      (* save boxed e1 in %rbx *)
+      compile_expr e2 ++               (* result in %rdi *)
+      movq (reg rdi) (reg rcx) ++      (* save boxed e2 in %rcx *)
 
-        movq (ind ~ofs:8 rbx) (reg rax) ++   (* unbox e1: value -> %rax *)
-        imulq (ind ~ofs:8 rcx) (reg rax) ++   (* add unboxed e2 *)
-        movq (reg rax) (reg rdi) ++
-        call "P_alloc_int" ++
-        movq (reg rax) (reg rdi)
+      movq (ind ~ofs:8 rbx) (reg rax) ++   (* unbox e1: value -> %rax *)
+      imulq (ind ~ofs:8 rcx) (reg rax) ++   (* add unboxed e2 *)
+      movq (reg rax) (reg rdi) ++
+      call "P_alloc_int" ++
+      movq (reg rax) (reg rdi)
+
+
+    | Bdiv ->
+      compile_expr e1 ++
+      movq (reg rdi) (reg rbx) ++         (* boxed e1 -> %rbx *)
+      compile_expr e2 ++
+      movq (reg rdi) (reg rcx) ++         (* boxed e2 -> %rcx *)
+
+      movq (ind ~ofs:8 rbx) (reg rax) ++  (* unbox e1 (dividend) -> %rax *)
+      cqto ++                             (* sign-extend %rax into %rdx *)
+      idivq (ind ~ofs:8 rcx) ++           (* divide by unboxed e2 (divisor) *)
+
+      movq (reg rax) (reg rdi) ++         (* result (quotient) -> %rdi *)
+      call "P_alloc_int" ++
+      movq (reg rax) (reg rdi)
+
+      
 
     | _ ->
         assert false (* TODO: other binary operations *)
