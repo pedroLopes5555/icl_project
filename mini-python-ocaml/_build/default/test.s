@@ -3,18 +3,18 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $3, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	movq %rdi, %rax
 	movq $2, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	movq %rdi, %rsi
-	movq 8(%rax), %rdi
-	addq 8(%rsi), %rdi
+	movq %rdi, %rbx
+	movq $2, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
 	call P_print
 	call P_print_newline
 	xorq %rax, %rax
@@ -91,3 +91,9 @@ S_StringNone:
 .string    "None"
 C_None:
   .quad   0
+C_False
+  .quad   1
+  .quad   0
+C_True
+  .quad   1
+  .quad   1

@@ -77,13 +77,16 @@ S_StringNone:
 C_None:
   .quad   0
 "
-
-(*C_False
+(*
+C_False
   .quad   1
   .quad   0
 C_True
   .quad   1
-  .quad   1*)
+  .quad   1
+*)
+
+
 
 let leave =
   movq (reg rbp) (reg rsp) ++ popq rbp ++ ret
@@ -161,6 +164,20 @@ let rec compile_expr (e: Ast.texpr) =
         call "P_alloc_int" ++
         movq (reg rax) (reg rdi)
 
+
+    | Beq ->
+        compile_expr e1 ++            (* compute e1, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rbx) ++   (* save e1 boxed pointer in %rbx *)
+        compile_expr e2 ++            (* compute e2, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rcx) ++   (* save e2 boxed pointer in %rcx *)
+
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* load unboxed e1 value into %rax *)
+        cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
+        sete (reg al) ++
+        movzbq (reg al) rdi ++
+        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        movq (reg rax) (reg rdi)
+        
     | _ ->
         assert false (* TODO: other binary operations *)
     end

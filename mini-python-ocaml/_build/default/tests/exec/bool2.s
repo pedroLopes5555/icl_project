@@ -3,7 +3,7 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $2, %rdi
+	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rbx

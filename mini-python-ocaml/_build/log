@@ -1,9 +1,8 @@
 # dune build minipython.exe
 # OCAMLPARAM: unset
 # Shared cache: enabled-except-user-rules
-# Shared cache location: /home/pcpedro/.cache/dune/db
-# Workspace root:
-# /home/pcpedro/workdir/escola/icl/icl_project/mini-python-ocaml
+# Shared cache location: /root/.cache/dune/db
+# Workspace root: /root/icl_project/mini-python-ocaml
 # Auto-detected concurrency: 16
 # Dune context:
 #  { name = "default"
@@ -14,4 +13,4 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /home/pcpedro/.opam/icl2025/bin/ocamlc.opt -config > /tmp/dune_555ce7_output
+$ /root/.opam/icl2025/bin/ocamlc.opt -config > /tmp/dune_7c2825_output
