@@ -1,1 +1,1 @@
-print(4>3)
+print(0 and 1)

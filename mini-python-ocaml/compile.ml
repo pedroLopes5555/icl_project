@@ -302,6 +302,35 @@ let rec compile_expr (e: Ast.texpr) =
         call "P_alloc_int" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
+
+    | Band ->
+        let lbl_false = new_label () in
+        let lbl_end = new_label () in
+
+        compile_expr e1 ++
+        movq (reg rdi) (reg rbx) ++          (* save e1 boxed *)
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* unbox e1 *)
+        testq (reg rax) (reg rax) ++
+        je lbl_false ++                     (* if e1 == 0 jump to false *)
+
+        compile_expr e2 ++
+        movq (reg rdi) (reg rcx) ++          (* save e2 boxed *)
+        movq (ind ~ofs:8 rcx) (reg rax) ++  (* unbox e2 *)
+        testq (reg rax) (reg rax) ++
+        je lbl_false ++                     (* if e2 == 0 jump to false *)
+
+        movq (imm64 1L) (reg rdi) ++
+        call "P_alloc_int" ++
+        movq (reg rax) (reg rdi) ++          (* move result to %rdi *) 
+        jmp lbl_end ++
+
+        label lbl_false ++
+        movq (imm64 0L) (reg rdi) ++
+        call "P_alloc_int" ++
+        movq (reg rax) (reg rdi) ++          (* move result to %rdi *) 
+
+        label lbl_end
+
     | _ ->
         assert false (* TODO: other binary operations *)
     end
