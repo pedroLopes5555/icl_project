@@ -3,23 +3,56 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $5, %rdi
-	call P_alloc_int
+	call F_foo
+	addq $0, %rsp
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	call F_foo
+	addq $0, %rsp
 	movq %rax, %rdi
 	movq %rdi, %rbx
-	movq $3, %rdi
-	call P_alloc_int
+	call F_foo
+	addq $0, %rsp
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
 	cmpq 8(%rcx), %rax
-	setl %al
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	call F_foo
+	addq $0, %rsp
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	call F_foo
+	addq $0, %rsp
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setne %al
 	movzbq %al, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	call P_print
 	call P_print_newline
 	xorq %rax, %rax
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_foo:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-8, %rsp
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+L_1:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
