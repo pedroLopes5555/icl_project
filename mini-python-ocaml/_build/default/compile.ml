@@ -260,6 +260,47 @@ let rec compile_expr (e: Ast.texpr) =
         call "P_alloc_int" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
+    
+    | Ble ->
+        compile_expr e1 ++            (* compute e1, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rbx) ++   (* save e1 boxed pointer in %rbx *)
+        compile_expr e2 ++            (* compute e2, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rcx) ++   (* save e2 boxed pointer in %rcx *)
+
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* load unboxed e1 value into %rax *)
+        cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
+        setle (reg al) ++
+        movzbq (reg al) rdi ++
+        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        movq (reg rax) (reg rdi)
+
+
+    | Bgt ->
+        compile_expr e1 ++            (* compute e1, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rbx) ++   (* save e1 boxed pointer in %rbx *)
+        compile_expr e2 ++            (* compute e2, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rcx) ++   (* save e2 boxed pointer in %rcx *)
+
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* load unboxed e1 value into %rax *)
+        cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
+        setg (reg al) ++
+        movzbq (reg al) rdi ++
+        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        movq (reg rax) (reg rdi)
+
+
+    | Bge ->
+        compile_expr e1 ++            (* compute e1, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rbx) ++   (* save e1 boxed pointer in %rbx *)
+        compile_expr e2 ++            (* compute e2, boxed pointer in %rdi *)
+        movq (reg rdi) (reg rcx) ++   (* save e2 boxed pointer in %rcx *)
+
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* load unboxed e1 value into %rax *)
+        cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
+        setge (reg al) ++
+        movzbq (reg al) rdi ++
+        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        movq (reg rax) (reg rdi)
 
     | _ ->
         assert false (* TODO: other binary operations *)
