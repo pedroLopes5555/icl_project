@@ -202,6 +202,21 @@ let rec compile_expr (e: Ast.texpr) =
       call "P_alloc_int" ++
       movq (reg rax) (reg rdi)
 
+
+    | Bmod ->
+      compile_expr e1 ++
+      movq (reg rdi) (reg rbx) ++
+      compile_expr e2 ++
+      movq (reg rdi) (reg rcx) ++
+
+      movq (ind ~ofs:8 rbx) (reg rax) ++
+      cqto ++
+      idivq (ind ~ofs:8 rcx) ++           (* %rdx now contains the remainder *)
+
+      movq (reg rdx) (reg rdi) ++
+      call "P_alloc_int" ++
+      movq (reg rax) (reg rdi)
+
       
 
     | _ ->

@@ -3,17 +3,18 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $5, %rdi
+	movq $19, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rbx
-	movq $3, %rdi
+	movq $4, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
-	imulq 8(%rcx), %rax
-	movq %rax, %rdi
+	cqto
+	idivq 8(%rcx)
+	movq %rdx, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	call P_print

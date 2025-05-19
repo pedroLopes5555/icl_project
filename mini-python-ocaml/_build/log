@@ -14,4 +14,11 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /home/pcpedro/.opam/icl2025/bin/ocamlc.opt -config > /tmp/dune_e5b0f3_output
+$ /home/pcpedro/.opam/icl2025/bin/ocamlc.opt -config > /tmp/dune_05da95_output
+$ (cd _build/default && /home/pcpedro/.opam/icl2025/bin/ocamldep.opt -modules -impl compile.ml) > _build/default/.minipython.eobjs/compile.impl.d
+$ (cd _build/default && /home/pcpedro/.opam/icl2025/bin/ocamlc.opt -g -bin-annot -I .minipython.eobjs/byte -no-alias-deps -opaque -o .minipython.eobjs/byte/compile.cmo -c -impl compile.ml)
+$ (cd _build/default && /home/pcpedro/.opam/icl2025/bin/ocamlc.opt -g -bin-annot -I .minipython.eobjs/byte -no-alias-deps -opaque -o .minipython.eobjs/byte/minipython.cmo -c -impl minipython.ml)
+$ (cd _build/default && /home/pcpedro/.opam/icl2025/bin/ocamlopt.opt -g -I .minipython.eobjs/byte -I .minipython.eobjs/native -intf-suffix .ml -no-alias-deps -opaque -o .minipython.eobjs/native/minipython.cmx -c -impl minipython.ml)
+$ (cd _build/default && /home/pcpedro/.opam/icl2025/bin/ocamlopt.opt -g -I .minipython.eobjs/byte -I .minipython.eobjs/native -intf-suffix .ml -no-alias-deps -opaque -o .minipython.eobjs/native/compile.cmx -c -impl compile.ml)
+$ (cd _build/default && /home/pcpedro/.opam/icl2025/bin/ocamlopt.opt -g -o minipython.exe .minipython.eobjs/native/ast.cmx .minipython.eobjs/native/x86_64.cmx .minipython.eobjs/native/compile.cmx .minipython.eobjs/native/parser.cmx .minipython.eobjs/native/lexer.cmx .minipython.eobjs/native/typing.cmx .minipython.eobjs/native/minipython.cmx)
+# Promoting "_build/default/minipython.exe" to "minipython.exe"
