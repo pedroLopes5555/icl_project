@@ -1,3 +1,1 @@
-def f(x):
-    return f()
-print(0)
+print(3+5)

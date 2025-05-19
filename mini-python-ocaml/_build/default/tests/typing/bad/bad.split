@@ -1,0 +1,39 @@
+$$$arity
+def f(x):
+    return f()
+print(0)
+$
+len()
+$
+len(1,2)
+$
+list()
+$
+list(1,2)
+$$$list
+print(list())
+$
+print(list(1))
+$
+print(list(range()))
+$$$unboundfunction
+f(1)
+$$$unboundvar
+print(x)
+$
+def f():
+    x = 1
+print(x)
+$
+def f():
+    x = 1
+def g():
+    return x
+print(0)
+$$$duplicate
+def f(x,x):
+    return x
+print(0)
+
+
+

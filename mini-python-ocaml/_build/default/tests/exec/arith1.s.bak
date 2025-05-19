@@ -1,0 +1,426 @@
+	.text
+	.globl	main
+main:
+	pushq %rbp
+	movq %rsp, %rbp
+	call F_$main
+	xorq %rax, %rax
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_$main:
+	pushq %rbp
+	movq %rsp, %rbp
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $2, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rsi
+	popq %rdi
+	call P_add
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	movq $C_None, %rax
+L_1:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+
+### primitives
+# tags  0 : None | 1 : bool | 2 : int | 3 : string | 4 : list
+P_equal: # rdi = rsi ?
+        movq    (%rdi), %rcx   # rcx = tag rdi
+        movq    (%rsi), %rdx   # rdx = tag rsi
+        cmpq    %rcx, %rdx
+        jne     1f
+        testq   %rcx, %rcx
+        je      0f  # None => égal
+        cmpq    $4, %rcx
+        jl      P_compare
+3:      # compare lists
+        pushq   %rbx
+        pushq   %r12
+        pushq   %r13
+        movq    %rdi, %r12
+        movq    %rsi, %r13
+        movq    $0, %rbx
+4:      cmpq    %rbx, 8(%r12)
+        je      5f
+        cmpq    %rbx, 8(%r13)
+        je      5f
+        leaq    16(%r12,%rbx,8), %rdi
+        movq    (%rdi), %rdi
+        leaq    16(%r13,%rbx,8), %rsi
+        movq    (%rsi), %rsi
+        call    P_equal
+        testq   %rax, %rax
+        jnz     6f
+        inc     %rbx
+        jmp     4b
+5:      movq    8(%r12), %rax
+        subq    8(%r13), %rax
+6:      popq    %r13
+        popq    %r12
+        popq    %rbx
+        ret
+0:      movq    $0, %rax  # 0 veut dire égal (comme compare)
+        ret
+1:      movq    $1, %rax  # 1 veut dire différent (comme compare)
+        ret
+P_compare: # rdi < rsi ?
+        movq    (%rdi), %rcx   # rcx = tag rdi
+        testq   %rcx, %rcx
+        jz      P_fail
+        movq    (%rsi), %rdx   # rdx = tag rsi
+        testq   %rdx, %rdx
+        jz      P_fail
+        cmpq    $2, %rcx
+        jg      2f
+        cmpq    $2, %rdx
+        jg      2f
+        movq 8(%rdi), %rax
+        subq 8(%rsi), %rax
+        ret
+2:      cmpq    %rcx, %rdx
+        jne     P_fail
+        cmpq    $4, %rcx
+        je      3f
+        # compare strings
+        leaq    16(%rdi), %rdi
+        leaq    16(%rsi), %rsi
+        pushq   %rbp
+        movq    %rsp, %rbp
+        andq    $-16, %rsp     # alignement de la pile
+        call    strcmp
+        movslq  %eax, %rax
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
+3:      # compare lists
+        pushq   %rbx
+        pushq   %r12
+        pushq   %r13
+        movq    %rdi, %r12
+        movq    %rsi, %r13
+        movq    $0, %rbx
+4:      cmpq    %rbx, 8(%r12)
+        je      5f
+        cmpq    %rbx, 8(%r13)
+        je      5f
+        leaq    16(%r12,%rbx,8), %rdi
+        movq    (%rdi), %rdi
+        leaq    16(%r13,%rbx,8), %rsi
+        movq    (%rsi), %rsi
+        call    P_compare
+        testq   %rax, %rax
+        jnz     6f
+        inc     %rbx
+        jmp     4b
+5:      movq    8(%r12), %rax
+        subq    8(%r13), %rax
+6:      popq    %r13
+        popq    %r12
+        popq    %rbx
+        ret
+P_test: # arg dans %rdi (et reste dans %rdi), résultat dans %rax
+        # None, False, chaîne vide, [], 0 => 0, sinon 1
+        movq   (%rdi), %rax   # rcx = tag
+        cmpq   $0, %rax   # None ?
+        je     E_test
+        movq   8(%rdi), %rax
+E_test: ret
+P_print_newline: # arg dans %rdi
+        pushq   %rbp
+        movq    %rsp, %rbp
+        andq    $-16, %rsp     # alignement de la pile
+        movq    $10, %rdi
+        call    putchar
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
+P_print: # arg dans %rdi
+        pushq   %rbp
+        movq    %rsp, %rbp
+        andq    $-16, %rsp     # alignement de la pile
+        movq    (%rdi), %rcx   # rcx = tag
+        # string ?
+        cmpq    $3, %rcx
+        jne     1f
+        leaq    16(%rdi), %rdi
+        jmp     L_puts
+1:      # int ?
+        cmpq    $2, %rcx
+        jne     2f
+        movq    8(%rdi), %rsi
+        movq    $S_int, %rdi
+        xorq    %rax, %rax
+        call    printf
+        jmp     E_print
+2:      # bool ?
+        cmpq    $1, %rcx
+        jne     3f
+        movq    8(%rdi), %rcx
+        movq    $S_True, %rdi
+        movq    $S_False, %rsi
+        testq   %rcx, %rcx
+        cmovz   %rsi, %rdi
+        jmp     L_puts
+3:      # None ?
+        cmpq    $0, %rcx
+        jne     4f
+        movq    $S_None, %rdi
+        jmp     L_puts
+4:      # list
+        movq    8(%rdi), %rcx  # len = nb restant à faire
+        pushq   %rcx
+        leaq    8(%rdi), %rdi
+        pushq   %rdi           # current ptr
+        movq    $'[', %rdi
+        call    putchar
+        movq    8(%rsp), %rcx
+        testq   %rcx, %rcx
+        jz      6f
+        # premier élément
+        dec     %rcx
+        movq    %rcx, 8(%rsp)
+        addq    $8, (%rsp)
+        movq    (%rsp), %rdi
+        movq    (%rdi), %rdi
+        call    P_print
+5:      movq    8(%rsp), %rcx
+        testq   %rcx, %rcx
+        jz      6f
+        dec     %rcx
+        movq    %rcx, 8(%rsp)
+        movq    $',', %rdi
+        call    putchar
+        movq    $' ', %rdi
+        call    putchar
+        addq    $8, (%rsp)
+        movq    (%rsp), %rdi
+        movq    (%rdi), %rdi
+        call    P_print
+        jmp     5b
+6:      addq    $16, %rsp
+        movq    $']', %rdi
+        call    putchar
+        jmp     E_print
+L_puts: movq    %rdi, %rsi
+        movq    $S_string, %rdi
+        xorq    %rax, %rax
+        call    printf
+E_print:
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
+F_len: # attention : arg sur la pile
+        movq 8(%rsp), %rdi
+        call    P_check_string_or_list
+        movq 8(%rdi), %rdi
+        jmp  P_alloc_int
+P_add:  movq    (%rdi), %rcx
+        testq   %rcx, %rcx
+        jz      P_fail
+        movq    (%rsi), %rdx
+        testq   %rdx, %rdx
+        jz      P_fail
+        cmpq    $2, %rcx
+        jle     P_add_int
+        cmpq    %rcx, %rdx
+        jne     P_fail
+        cmpq    $3, %rcx
+        je      P_add_string
+P_add_list: # concaténation de deux listes
+        pushq   %rbx
+        pushq   %r12
+        pushq   %r13
+        movq    %rdi, %r12
+        movq    %rsi, %r13
+        movq    8(%r12), %rdi
+        addq    8(%r13), %rdi
+        call    P_alloc_list
+        movq    $0, %rbx
+3:      # copie l1
+        cmpq    %rbx, 8(%r12)
+        je      4f
+        leaq    16(%r12,%rbx,8), %rdi
+        movq    (%rdi), %rdi
+        movq    %rdi, 16(%rax,%rbx,8)
+        inc     %rbx
+        jmp     3b
+4:      leaq    16(%rax,%rbx,8), %r12
+        movq    $0, %rbx
+5:      # copie l2
+        cmpq    %rbx, 8(%r13)
+        je      2f
+        leaq    16(%r13,%rbx,8), %rdi
+        movq    (%rdi), %rdi
+        movq    %rdi, (%r12,%rbx,8)
+        inc     %rbx
+        jmp     5b
+2:      popq    %r13
+        popq    %r12
+        popq    %rbx
+        ret
+P_add_string:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        subq    $24, %rsp
+        andq    $-16, %rsp      # alignement de la pile
+        movq    %rdi, -8(%rbp)  # s1
+        movq    %rsi, -16(%rbp) # s2
+        movq    8(%rdi), %rdi   # n1
+        addq    8(%rsi), %rdi   # +n2
+        movq    %rdi, -24(%rbp)
+        addq    $17, %rdi       # +17
+        call    malloc
+        # tag et longueur
+        movq    $3, (%rax)
+        movq    -24(%rbp), %rcx
+        movq    %rcx, 8(%rax)
+        movq    %rax, -24(%rbp)  # résultat
+        # copie s1
+        leaq    16(%rax), %rdi
+        movq    -8(%rbp), %rsi
+        addq    $16, %rsi
+        call    strcpy
+        # concatène s2
+        movq    -24(%rbp), %rdi
+        addq    $16, %rdi
+        movq    -16(%rbp), %rsi
+        addq    $16, %rsi
+        call    strcat
+        movq    -24(%rbp), %rax
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
+P_add_int:  # rdi est un entier
+        movq    (%rsi), %rdx
+        cmpq    $2, %rdx
+        jg      P_fail
+        movq    8(%rdi), %rdi
+        addq    8(%rsi), %rdi
+        jmp     P_alloc_int
+P_sub_int:
+        movq    8(%rdi), %rdi
+        subq    8(%rsi), %rdi
+        jmp     P_alloc_int
+P_neg_int:
+        movq    8(%rdi), %rdi
+        neg     %rdi
+        jmp     P_alloc_int
+P_mul_int:
+        movq    8(%rdi), %rdi
+        imulq   8(%rsi), %rdi
+        jmp     P_alloc_int
+P_div_int:
+        movq    8(%rdi), %rax
+        cqto
+        movq    8(%rsi), %rsi
+        idivq   %rsi
+        movq    %rax, %rdi
+        jmp     P_alloc_int
+P_mod_int:
+        movq    8(%rdi), %rax
+        cqto
+        movq    8(%rsi), %rsi
+        idivq   %rsi
+        movq    %rdx, %rdi
+        jmp     P_alloc_int
+P_alloc_int:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        pushq   %rdi
+        andq    $-16, %rsp     # alignement de la pile
+        movq    $16, %rdi
+        call    malloc
+        movq    $2, (%rax)
+        movq    -8(%rbp), %rdi
+        movq    %rdi, 8(%rax)
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
+P_alloc_list:
+        pushq   %rbp
+        movq    %rsp, %rbp
+        pushq   %rdi
+        andq    $-16, %rsp     # alignement de la pile
+        shl     $3, %rdi
+        addq    $16, %rdi      # 16+8n octets
+        call    malloc
+        movq    $4, (%rax)
+        movq    -8(%rbp), %rdi
+        movq    %rdi, 8(%rax)
+        movq    %rbp, %rsp
+        popq    %rbp
+        ret
+P_range:
+        call    P_get_int
+        pushq   %rbx
+        pushq   %r12
+        movq    %rdi, %rbx    # index
+        call    P_alloc_list
+        movq    %rax, %r12    # list
+        jmp     2f
+1:      movq    %rbx, %rdi
+        call    P_alloc_int
+        movq    %rax, 16(%r12,%rbx,8)
+2:      dec     %rbx
+        jns     1b
+        movq    %r12, %rax
+        popq    %r12
+        popq    %rbx
+        ret
+P_get_int:
+        movq    (%rdi), %rcx
+        cmpq    $0, %rcx
+        je     P_fail
+        cmpq    $2, %rcx
+        jg     P_fail
+        movq    8(%rdi), %rdi
+        ret
+P_check_string_or_list:
+        movq    (%rdi), %rcx
+        cmpq    $3, %rcx
+        jl      P_fail
+        ret
+P_check_list:
+        movq    (%rdi), %rcx
+        cmpq    $4, %rcx
+        jne     P_fail
+        ret
+P_fail:
+        andq    $-16, %rsp     # alignement de la pile
+        movq    $S_error, %rdi
+        call    puts
+        movq    $1, %rdi
+        jmp     exit
+	.data
+### constantes
+C_None:
+        .quad 0
+C_False:
+        .quad 1
+        .quad 0
+C_True:
+        .quad 1
+        .quad 1
+### chaînes
+S_int:
+	.string "%d"
+S_string:
+	.string "%s"
+S_None:
+	.string "None"
+S_True:
+	.string "True"
+S_False:
+	.string "False"
+S_todo:
+        .string "<todo>"
+S_error:
+        .string "error"

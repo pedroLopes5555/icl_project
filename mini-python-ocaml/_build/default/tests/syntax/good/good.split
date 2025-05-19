@@ -1,0 +1,93 @@
+$$$ident
+x__ = 0
+
+
+$$$toplevel_const
+1
+$$$toplevel_print
+print(1)
+$$$toplevel_assign
+x = 4
+print(x)
+
+$$$toplevel_commentaire
+x = 1
+
+#commentaire
+
+y = 2  #autre commentaire
+
+
+print(x + y // 4 % f(10))
+
+
+$$$fundef_commentaires
+def f(x,y,z,t): # commentaire autorisé ici
+    if x >= y:
+        return t
+    else:
+        for i in list(range(x)):
+            x = x+i
+
+    print(x)
+    return x
+
+
+print(f(1,2,3,5))
+
+
+$$$multi_fundefs
+def plus (x, y):
+    return x + y
+
+def moins (x, y):
+    return x - y
+
+def mult (x, y):
+    return x * y
+
+def div (x, y):
+    return x // y
+
+def modulo (x, y):
+    return x % y
+
+
+x = 3
+y = 4
+z = 5
+
+print(x % y + z - 5 * y + -1 // 2 == plus(moins(plus(modulo(x,y), z), mult(5,y)), div(-1,2)))
+$$$listes
+def f(x):
+    return [ x ]
+
+
+lst1 = [ 1, 2, 3, 4, 5, 6, 7 ]
+lst2 = list(range(10))
+
+lst3 = lst1 + lt2
+lst4 = [ lst1, f(lst3) ]
+
+$$$blocs_commentaires
+def fonction1(x):
+    return [ x ]
+
+def fonction2(x, y):
+    return fonction1(y + x)
+
+def fonction3():
+    # Une fonction sans argument
+    x = list(range(3))
+    y = list(range(4))
+    for i in y:
+        for j in x:
+            print(fonction2(x,y))
+
+    # retour de bloc
+    # et commentaire sur plusieurs lignes
+
+    return []
+
+
+print(fonction3())

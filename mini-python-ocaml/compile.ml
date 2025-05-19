@@ -147,7 +147,25 @@ let rec compile_expr (e: Ast.texpr) =
   | TEvar x -> 
       movq (ind ~ofs:x.v_ofs rbp) (reg rdi)
 
-  | TEbinop (_, _, _) -> assert false (* TODO *)
+| TEbinop (binop, e1, e2) -> 
+    begin match binop with
+    | Badd ->
+        compile_expr e1 ++               (* result in %rdi *)
+        movq (reg rdi) (reg rbx) ++      (* save boxed e1 in %rbx *)
+        compile_expr e2 ++               (* result in %rdi *)
+        movq (reg rdi) (reg rcx) ++      (* save boxed e2 in %rcx *)
+
+        movq (ind ~ofs:8 rbx) (reg rax) ++   (* unbox e1: value -> %rax *)
+        addq (ind ~ofs:8 rcx) (reg rax) ++   (* add unboxed e2 *)
+        movq (reg rax) (reg rdi) ++
+        call "P_alloc_int" ++
+        movq (reg rax) (reg rdi)
+
+    | _ ->
+        assert false (* TODO: other binary operations *)
+    end
+
+
   | TEunop (_, _) -> assert false (* TODO *)
   | TEcall (fn, el) -> 
     (*method to alocate*)  
