@@ -1,1 +1,1 @@
-print(0 and 1)
+print(1>2 and len(1))

@@ -3,7 +3,7 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $5, %rdi
+	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rbx
@@ -13,27 +13,31 @@ main:
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
 	cmpq 8(%rcx), %rax
-	setg %al
+	setl %al
 	movzbq %al, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rbx
 	movq 8(%rbx), %rax
 	testq %rax, %rax
-	je L_2
+	jne L_2
 	movq $1, %rdi
 	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_len
+	addq $8, %rsp
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rcx), %rax
 	testq %rax, %rax
-	je L_2
-	movq $1, %rdi
+	jne L_2
+	movq $0, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	jmp L_3
 L_2:
-	movq $0, %rdi
+	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 L_3:

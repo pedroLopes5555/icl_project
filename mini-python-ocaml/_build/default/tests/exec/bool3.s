@@ -3,7 +3,7 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $5, %rdi
+	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rbx
@@ -23,6 +23,10 @@ main:
 	je L_2
 	movq $1, %rdi
 	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_len
+	addq $8, %rsp
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rcx), %rax
