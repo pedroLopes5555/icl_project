@@ -3,32 +3,17 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-<<<<<<< HEAD
 	movq $2, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	movq %rdi, %rbx
-	movq $2, %rdi
-=======
-	movq $9, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rbx
 	movq $3, %rdi
->>>>>>> e1d239755a87f19d43ce928ce5d125492ea01695
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
-<<<<<<< HEAD
-	cmpq 8(%rcx), %rax
-	sete %al
-	movzbq %al, %rdi
-=======
-	cqto
-	idivq 8(%rcx)
+	imulq 8(%rcx), %rax
 	movq %rax, %rdi
->>>>>>> e1d239755a87f19d43ce928ce5d125492ea01695
 	call P_alloc_int
 	movq %rax, %rdi
 	call P_print
