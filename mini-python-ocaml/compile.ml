@@ -69,16 +69,25 @@ P_print:
       movq    %rsp, %rbp
 
       movq    (%rdi), %rax         # Load the tag from the first 8 bytes of the boxed value into %rax
+
       cmpq    $1, %rax             # Check if tag == 1 (boolean)
-      je      P_print_bool        # If it's a boolean, jump to P_print_bool
+      call P_print_bool
+      jmp P_print_end
 
-      # Otherwise, assume it's an integer
-      movq    8(%rdi), %rdi        # Load the value (unboxed int) into %rdi
+
+      cmpq    $2, %rax             # Check if tag == 2 (integer)
+      call    P_print_int_dispatch
+      jmp     P_print_end
+      # TODO: Add other types here (e.g., string, list)
+
+      # Fallback or unknown type
+      jmp     P_print_end          # No-op or could add error printing
+
+P_print_int_dispatch:
+      movq    8(%rdi), %rdi        # Unbox integer into %rdi
       call    P_print_int
+      jmp     P_print_end
 
-      movq    %rbp, %rsp
-      popq    %rbp
-      ret
 
 P_alloc_int:
       pushq   %rbp
