@@ -15,28 +15,8 @@ main:
 	cmpq 8(%rcx), %rax
 	setg %al
 	movzbq %al, %rdi
-	call P_alloc_int
+	call P_alloc_bool
 	movq %rax, %rdi
-	movq %rdi, %rbx
-	movq 8(%rbx), %rax
-	testq %rax, %rax
-	jne L_2
-	movq $0, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	movq %rdi, %rcx
-	movq 8(%rcx), %rax
-	testq %rax, %rax
-	jne L_2
-	movq $0, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	jmp L_3
-L_2:
-	movq $1, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-L_3:
 	call P_print
 	call P_print_newline
 	xorq %rax, %rax
@@ -55,17 +35,41 @@ P_print_int:
       movq    %rbp, %rsp
       popq    %rbp
       ret
-P_print:
-      # arg to print is in %rdi;
-      # for now, let us assume it is always an integer
-      # and let us ignore the tag
+
+P_print_bool:
       pushq   %rbp
       movq    %rsp, %rbp
-      movq    8(%rdi), %rdi
-      call    P_print_int
+      andq    $-16, %rsp
+      movq    %rdi, %rsi
+      cmpq    $0, 8(%rdi)
+      je      P_print_false
+      movq    $S_StringTrue, %rdi
+      jmp     P_print_end
+P_print_false:
+      movq    $S_StringFalse, %rdi
+      jmp     P_print_end
+P_print_end:
+      xorq    %rax, %rax
+      call    printf
       movq    %rbp, %rsp
       popq    %rbp
       ret
+P_print:
+      pushq   %rbp
+      movq    %rsp, %rbp
+
+      movq    (%rdi), %rax         # Load the tag from the first 8 bytes of the boxed value into %rax
+      cmpq    $1, %rax             # Check if tag == 1 (boolean)
+      je      P_print_bool        # If it's a boolean, jump to P_print_bool
+
+      # Otherwise, assume it's an integer
+      movq    8(%rdi), %rdi        # Load the value (unboxed int) into %rdi
+      call    P_print_int
+
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
+
 P_alloc_int:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -93,6 +97,20 @@ P_alloc_int:
       movq    %rbp, %rsp
       popq    %rbp
       ret                 # the result is in %rax
+P_alloc_bool:
+      pushq   %rbp
+      movq    %rsp, %rbp
+      pushq   %rdi              # push boolean value (0 or 1)
+      andq    $-16, %rsp        # align stack
+      movq    $16, %rdi         # request 16 bytes
+      call    malloc
+      movq    $1, (%rax)        # store tag for bool at offset 0
+      movq    -8(%rbp), %rdi    # recover original boolean value
+      movq    %rdi, 8(%rax)     # store boolean value at offset 8
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
+
 P_print_newline:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -111,5 +129,16 @@ S_newline:
   .string    "\n"
 S_StringNone:
 .string    "None"
+S_StringTrue:
+.string    "True"
+S_StringFalse:
+.string    "False"
 C_None:
   .quad   0
+C_False:
+  .quad   1
+  .quad   0
+C_True:
+  .quad   1
+  .quad   1
+

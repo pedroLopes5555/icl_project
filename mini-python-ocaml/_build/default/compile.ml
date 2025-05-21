@@ -1,10 +1,38 @@
-
 open Format
 open X86_64
 open Ast
 
 let debug = ref false
+(*
+none:
+  []
 
+bool
+  [1][n]
+  1 -> tag
+  n -> value
+
+int:
+  [2][n]
+  2 -> tag
+
+string:
+  [3][l][][][][][]
+        ---------
+            |
+            V
+       string value
+
+  3 -> tag
+  l -> lengh
+
+list:
+  [4][n][e1][e2][e3][e4][e5]
+  4 -> tag
+  n -> length
+  ek -> pointer to the k-th element
+
+*)
 let preamble = "
 P_print_int:
       pushq   %rbp
@@ -17,17 +45,41 @@ P_print_int:
       movq    %rbp, %rsp
       popq    %rbp
       ret
-P_print:
-      # arg to print is in %rdi;
-      # for now, let us assume it is always an integer
-      # and let us ignore the tag
+
+P_print_bool:
       pushq   %rbp
       movq    %rsp, %rbp
-      movq    8(%rdi), %rdi
-      call    P_print_int
+      andq    $-16, %rsp
+      movq    %rdi, %rsi
+      cmpq    $0, 8(%rdi)
+      je      P_print_false
+      movq    $S_StringTrue, %rdi
+      jmp     P_print_end
+P_print_false:
+      movq    $S_StringFalse, %rdi
+      jmp     P_print_end
+P_print_end:
+      xorq    %rax, %rax
+      call    printf
       movq    %rbp, %rsp
       popq    %rbp
       ret
+P_print:
+      pushq   %rbp
+      movq    %rsp, %rbp
+
+      movq    (%rdi), %rax         # Load the tag from the first 8 bytes of the boxed value into %rax
+      cmpq    $1, %rax             # Check if tag == 1 (boolean)
+      je      P_print_bool        # If it's a boolean, jump to P_print_bool
+
+      # Otherwise, assume it's an integer
+      movq    8(%rdi), %rdi        # Load the value (unboxed int) into %rdi
+      call    P_print_int
+
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
+
 P_alloc_int:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -55,6 +107,20 @@ P_alloc_int:
       movq    %rbp, %rsp
       popq    %rbp
       ret                 # the result is in %rax
+P_alloc_bool:
+      pushq   %rbp
+      movq    %rsp, %rbp
+      pushq   %rdi              # push boolean value (0 or 1)
+      andq    $-16, %rsp        # align stack
+      movq    $16, %rdi         # request 16 bytes
+      call    malloc
+      movq    $1, (%rax)        # store tag for bool at offset 0
+      movq    -8(%rbp), %rdi    # recover original boolean value
+      movq    %rdi, 8(%rax)     # store boolean value at offset 8
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
+
 P_print_newline:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -74,17 +140,21 @@ S_newline:
   .string    \"\\n\"
 S_StringNone:
 .string    \"None\"
+S_StringTrue:
+.string    \"True\"
+S_StringFalse:
+.string    \"False\"
 C_None:
   .quad   0
-"
-(*
-C_False
+C_False:
   .quad   1
   .quad   0
-C_True
+C_True:
   .quad   1
   .quad   1
-*)
+
+"  
+
 
 
 
@@ -146,11 +216,13 @@ let rec compile_expr (e: Ast.texpr) =
       movq (reg rax) (reg rdi)
   | TEcst Cnone -> 
     movq (ilab "C_None") (reg rdi)
-  | TEcst _ -> assert false (* TODO *)
+  | TEcst Cbool b -> 
+    movq (ilab (if b then "C_True" else "C_False")) (reg rdi) 
   | TEvar x -> 
       movq (ind ~ofs:x.v_ofs rbp) (reg rdi)
-
-| TEbinop (binop, e1, e2) -> 
+  | TEcst _ -> assert false (* TODO *)
+  
+  | TEbinop (binop, e1, e2) -> 
     begin match binop with
     | Badd ->
         compile_expr e1 ++               (* result in %rdi *)
@@ -229,7 +301,7 @@ let rec compile_expr (e: Ast.texpr) =
         cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
         sete (reg al) ++
         movzbq (reg al) rdi ++
-        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        call "P_alloc_bool" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
 
@@ -243,7 +315,7 @@ let rec compile_expr (e: Ast.texpr) =
         cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
         setne (reg al) ++
         movzbq (reg al) rdi ++
-        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        call "P_alloc_bool" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
 
@@ -257,7 +329,7 @@ let rec compile_expr (e: Ast.texpr) =
         cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
         setl (reg al) ++
         movzbq (reg al) rdi ++
-        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        call "P_alloc_bool" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
     
@@ -271,7 +343,7 @@ let rec compile_expr (e: Ast.texpr) =
         cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
         setle (reg al) ++
         movzbq (reg al) rdi ++
-        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        call "P_alloc_bool" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
 
@@ -285,7 +357,7 @@ let rec compile_expr (e: Ast.texpr) =
         cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
         setg (reg al) ++
         movzbq (reg al) rdi ++
-        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        call "P_alloc_bool" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
 
@@ -299,67 +371,11 @@ let rec compile_expr (e: Ast.texpr) =
         cmpq (ind ~ofs:8 rcx) (reg rax) ++  (* compare unboxed e2 to %rax *)
         setge (reg al) ++
         movzbq (reg al) rdi ++
-        call "P_alloc_int" ++           (* box the 0/1 integer *)
+        call "P_alloc_bool" ++           (* box the 0/1 integer *)
         movq (reg rax) (reg rdi)
 
-
-    | Band ->
-        let lbl_false = new_label () in
-        let lbl_end = new_label () in
-
-        compile_expr e1 ++
-        movq (reg rdi) (reg rbx) ++          (* save e1 boxed *)
-        movq (ind ~ofs:8 rbx) (reg rax) ++  (* unbox e1 *)
-        testq (reg rax) (reg rax) ++
-        je lbl_false ++                     (* if e1 == 0 jump to false *)
-
-        compile_expr e2 ++
-        movq (reg rdi) (reg rcx) ++          (* save e2 boxed *)
-        movq (ind ~ofs:8 rcx) (reg rax) ++  (* unbox e2 *)
-        testq (reg rax) (reg rax) ++
-        je lbl_false ++                     (* if e2 == 0 jump to false *)
-
-        movq (imm64 1L) (reg rdi) ++
-        call "P_alloc_int" ++
-        movq (reg rax) (reg rdi) ++          (* move result to %rdi *) 
-        jmp lbl_end ++
-
-        label lbl_false ++
-        movq (imm64 0L) (reg rdi) ++
-        call "P_alloc_int" ++
-        movq (reg rax) (reg rdi) ++          (* move result to %rdi *) 
-
-        label lbl_end
-
-
-    | Bor ->
-        let lbl_true = new_label () in
-        let lbl_end = new_label () in
-
-        compile_expr e1 ++
-        movq (reg rdi) (reg rbx) ++          (* save e1 boxed *)
-        movq (ind ~ofs:8 rbx) (reg rax) ++   (* unbox e1 *)
-        testq (reg rax) (reg rax) ++
-        jne lbl_true ++                      (* if e1 != 0 → true *)
-
-        compile_expr e2 ++
-        movq (reg rdi) (reg rcx) ++          (* save e2 boxed *)
-        movq (ind ~ofs:8 rcx) (reg rax) ++   (* unbox e2 *)
-        testq (reg rax) (reg rax) ++
-        jne lbl_true ++                      (* if e2 != 0 → true *)
-
-        movq (imm64 0L) (reg rdi) ++
-        call "P_alloc_int" ++
-        movq (reg rax) (reg rdi) ++
-        jmp lbl_end ++
-
-        label lbl_true ++
-        movq (imm64 1L) (reg rdi) ++
-        call "P_alloc_int" ++
-        movq (reg rax) (reg rdi) ++
-
-        label lbl_end
-  
+    | _ ->
+        assert false (* TODO: other binary operations *)
     end
 
 
@@ -377,7 +393,11 @@ let rec compile_expr (e: Ast.texpr) =
       depois do call temos que restablecer o rsp*)
       movq(reg rax) (reg rdi)
   | TElist _ -> assert false (* TODO *)
+
+
   | TErange _ -> assert false (* TODO *)
+
+
   | TEget (_, _) -> assert false (* TODO *)
 
 let rec compile_stmt exit_lbl (s: Ast.tstmt) =

@@ -1,1 +1,1 @@
-print(1>2 or 0)
+print(1>2)
