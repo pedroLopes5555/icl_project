@@ -1,3 +1,1 @@
-l = [1,2,3,4,5]
-
-print(l)
+print(1>2 and len(1))
