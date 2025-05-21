@@ -208,7 +208,7 @@ P_print_newline:
 
 let data_inline = "
 S_message_int:
-  .string    \"%d\"
+.string    \"%d\"
 S_message_string:
   .string    \"%s\"
 S_message_None:
@@ -315,8 +315,6 @@ let rec compile_expr (e: Ast.texpr) =
   | TEcst (Cstring s) ->
     let l = new_string s in
     movq (ilab l) (reg rdi)
-
-
   
   | TEbinop (binop, e1, e2) -> 
     begin match binop with
@@ -488,7 +486,18 @@ let rec compile_expr (e: Ast.texpr) =
       (*por cada push o rsp baixa 8 bites, 
       depois do call temos que restablecer o rsp*)
       movq(reg rax) (reg rdi)
-  | TElist _ -> assert false (* TODO *)
+  
+  | TElist el ->
+      let push_e acc e =
+        compile_expr e ++ pushq (reg rdi) ++ acc in
+      let pop_e i a e =
+        let ofs = 16 + i * 8 in
+        a ++ popq rdi ++ movq (reg rdi) (ind ~ofs rax) in
+      List.fold_left push_e nop el ++
+      movq (imm (List.length el)) (reg rdi) ++
+      call "P_alloc_list" ++
+      fold_i pop_e 0 nop el ++
+      movq (reg rax) (reg rdi)
 
 
   | TErange _ -> assert false (* TODO *)
@@ -498,7 +507,18 @@ let rec compile_expr (e: Ast.texpr) =
 
 let rec compile_stmt exit_lbl (s: Ast.tstmt) =
   match s with
-  | TSif (_, _, _) -> assert false (* TODO *)
+  | TSif (e, s1, s2) ->
+      let l_else = new_label () in
+      let l_end = new_label () in
+      compile_expr e ++
+      call "P_test" ++
+      testq (reg rax) (reg rax) ++
+      jz l_else ++
+      compile_stmt exit_lbl s1 ++
+      jmp l_end ++
+      label l_else ++
+      compile_stmt exit_lbl s2 ++
+      label l_end
   | TSreturn e -> 
       compile_expr e ++
       movq (reg rdi) (reg rax) ++
@@ -538,9 +558,13 @@ let alloc_param v =
       andq (imm(-8 * env.nb_total)) (reg rsp) in
 
   (*put everything together*)
-  lbl ++ enter ++ locals ++
+  lbl ++ 
+  enter ++ 
+  locals ++
   (*compile the function body*) 
-  body ++ label exit_lbl ++ leave
+  body ++ 
+  label exit_lbl ++ 
+  leave
 
 
 

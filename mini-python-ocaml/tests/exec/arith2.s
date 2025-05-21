@@ -195,7 +195,7 @@ P_print_newline:
 	.data
 
 S_message_int:
-  .string    "%d"
+.string    "%d"
 S_message_string:
   .string    "%s"
 S_message_None:

@@ -3,18 +3,26 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $1, %rdi
+	movq $3, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	movq %rdi, %rbx
+	pushq %rdi
 	movq $2, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	movq %rdi, %rcx
-	movq 8(%rbx), %rax
-	addq 8(%rcx), %rax
-	movq %rax, %rdi
+	pushq %rdi
+	movq $1, %rdi
 	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $3, %rdi
+	call P_alloc_list
+	popq %rdi
+	movq %rdi, 16(%rax)
+	popq %rdi
+	movq %rdi, 24(%rax)
+	popq %rdi
+	movq %rdi, 32(%rax)
 	movq %rax, %rdi
 	call P_print
 	call P_print_newline

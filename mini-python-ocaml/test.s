@@ -3,20 +3,42 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
+	andq $-8, %rsp
+	movq $5, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $4, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $3, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $2, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
 	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	movq %rdi, %rbx
-	movq $0, %rdi
-	call P_alloc_int
+	pushq %rdi
+	movq $5, %rdi
+	call P_alloc_list
+	popq %rdi
+	movq %rdi, 16(%rax)
+	popq %rdi
+	movq %rdi, 24(%rax)
+	popq %rdi
+	movq %rdi, 32(%rax)
+	popq %rdi
+	movq %rdi, 40(%rax)
+	popq %rdi
+	movq %rdi, 48(%rax)
 	movq %rax, %rdi
-	movq %rdi, %rcx
-	movq 8(%rbx), %rax
-	cmpq 8(%rcx), %rax
-	setl %al
-	movzbq %al, %rdi
-	call P_alloc_bool
-	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	movq -8(%rbp), %rdi
 	call P_print
 	call P_print_newline
 	xorq %rax, %rax
@@ -196,7 +218,7 @@ P_print_newline:
 	.data
 
 S_message_int:
-  .string    "%d"
+.string    "%d"
 S_message_string:
   .string    "%s"
 S_message_None:

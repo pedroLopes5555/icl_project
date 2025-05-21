@@ -3,12 +3,58 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
+	movq $3, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_make
+	addq $8, %rsp
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	xorq %rax, %rax
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_make:
+	pushq %rbp
+	movq %rsp, %rbp
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_test
+	testq %rax, %rax
+	jz L_3
+	movq $S_2, %rdi
+	movq %rdi, %rax
+	jmp L_2
+	jmp L_4
+L_3:
+	movq $S_1, %rdi
+	movq %rdi, %rbx
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
 	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	movq %rdi, %rbx
-	movq $2, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	subq 8(%rcx), %rax
+	movq %rax, %rdi
 	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_make
+	addq $8, %rsp
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
@@ -16,9 +62,10 @@ main:
 	movq %rax, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	call P_print
-	call P_print_newline
-	xorq %rax, %rax
+	movq %rdi, %rax
+	jmp L_2
+L_4:
+L_2:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -214,3 +261,9 @@ C_False:
 C_True:
   .quad       1
   .quad       1
+S_2:
+	.quad 3, 0
+	.string ""
+S_1:
+	.quad 3, 1
+	.string "a"
