@@ -3,18 +3,13 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $19, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
+	movq $S_2, %rdi
 	movq %rdi, %rbx
-	movq $4, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
+	movq $S_1, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
-	cqto
-	idivq 8(%rcx)
-	movq %rdx, %rdi
+	addq 8(%rcx), %rax
+	movq %rax, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	call P_print
@@ -215,3 +210,9 @@ C_False:
 C_True:
   .quad       1
   .quad       1
+S_2:
+	.quad 3, 3
+	.string "foo"
+S_1:
+	.quad 3, 3
+	.string "bar"

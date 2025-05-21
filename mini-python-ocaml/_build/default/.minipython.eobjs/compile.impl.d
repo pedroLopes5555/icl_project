@@ -1,1 +1,1 @@
-compile.ml: Ast Format List X86_64
+compile.ml: Ast Format Hashtbl List String X86_64

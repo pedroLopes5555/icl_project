@@ -34,6 +34,38 @@ list:
 
 *)
 let preamble = "
+P_test: # argument in %rdi
+      pushq   %rbp
+      movq    %rsp, %rbp
+      movq    (%rdi), %rax
+      cmpq    $0, %rax
+      je      E_test
+      movq    8(%rdi), %rax
+E_test:
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
+P_print_None:
+      pushq   %rbp
+      movq    %rsp, %rbp
+      andq    $-16, %rsp
+      movq    $S_message_None, %rdi
+      xorq    %rax, %rax
+      call    printf
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
+P_print_string:
+      pushq   %rbp
+      movq    %rsp, %rbp
+      andq    $-16, %rsp
+      movq    %rdi, %rsi
+      movq    $S_message_string, %rdi
+      xorq    %rax, %rax
+      call    printf
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
 P_print_int:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -45,50 +77,54 @@ P_print_int:
       movq    %rbp, %rsp
       popq    %rbp
       ret
-
-P_print_bool:
+P_print_Bool:
       pushq   %rbp
       movq    %rsp, %rbp
-      andq    $-16, %rsp
-      movq    %rdi, %rsi
-      cmpq    $0, 8(%rdi)
-      je      P_print_false
-      movq    $S_StringTrue, %rdi
-      jmp     P_print_end
-P_print_false:
-      movq    $S_StringFalse, %rdi
-      jmp     P_print_end
-P_print_end:
-      xorq    %rax, %rax
+      andq    $-16, %rsp       # align stack
+      movq    8(%rdi), %rax    # load the boolean value
+      cmpq    $0, %rax
+      jne     1f               # if not zero, it's True
+      movq    $S_message_False, %rdi
+      jmp     2f
+1:
+      movq    $S_message_True, %rdi
+2:
+      xorq    %rax, %rax       # clear %rax as required by printf
       call    printf
       movq    %rbp, %rsp
       popq    %rbp
       ret
 P_print:
+      # arg to print is in %rdi;
+      # for now, let us assume it is always an integer
+      # and let us ignore the tag
       pushq   %rbp
       movq    %rsp, %rbp
-
-      movq    (%rdi), %rax         # Load the tag from the first 8 bytes of the boxed value into %rax
-
-      cmpq    $1, %rax             # Check if tag == 1 (boolean)
-      call P_print_bool
-      jmp P_print_end
-
-
-      cmpq    $2, %rax             # Check if tag == 2 (integer)
-      call    P_print_int_dispatch
-      jmp     P_print_end
-      # TODO: Add other types here (e.g., string, list)
-
-      # Fallback or unknown type
-      jmp     P_print_end          # No-op or could add error printing
-
-P_print_int_dispatch:
-      movq    8(%rdi), %rdi        # Unbox integer into %rdi
+      cmpq    $0, (%rdi) # is this None?
+      je      0f
+      cmpq    $1, (%rdi) # is this bool?
+      je      1f
+      cmpq    $2, (%rdi) # is this integer?
+      je      2f
+      cmpq    $3, (%rdi) # is this String?
+      je      3f
+0:
+      call    P_print_None
+      jmp     E_print
+1:
+      call    P_print_Bool
+      jmp     E_print
+3:
+      leaq    16(%rdi), %rdi
+      call    P_print_string
+      jmp     E_print
+2:
+      movq    8(%rdi), %rdi
       call    P_print_int
-      jmp     P_print_end
-
-
+E_print:
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret
 P_alloc_int:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -116,20 +152,47 @@ P_alloc_int:
       movq    %rbp, %rsp
       popq    %rbp
       ret                 # the result is in %rax
+
 P_alloc_bool:
       pushq   %rbp
       movq    %rsp, %rbp
-      pushq   %rdi              # push boolean value (0 or 1)
-      andq    $-16, %rsp        # align stack
-      movq    $16, %rdi         # request 16 bytes
-      call    malloc
-      movq    $1, (%rax)        # store tag for bool at offset 0
-      movq    -8(%rbp), %rdi    # recover original boolean value
-      movq    %rdi, 8(%rax)     # store boolean value at offset 8
+      pushq   %rdi        # the boolean value is in %rdi
+      andq    $-16, %rsp  # stack alignment;
+      movq    $16, %rdi   # how many bytes you want to allocate;
+      call    malloc      # the new allocated address is in %rax,
+                          # which is a 16 bytes = 2 * 8 = 2 * 64 bits
+                          # segment;
+      movq    $1, (%rax)  # put the tag of a boolean block
+                          # in the address pointed by %rax;
+      movq    -8(%rbp), %rdi # get back the value of n, which is now on
+                             # the stack, at address %rbp - 8 bytes;
+      movq    %rdi, 8(%rax)  # put the value of n at address
+                              # %rax + 8 bytes; 
+      #### Now, we have the following, contiguous block allocated:
+      ####    +---------+---------+ 
+      ####    |    1    |    n    |
+      ####    +---------+---------+
+      ####    | 8 bytes | 8 bytes |
+      ####    +---------+---------+
+      ####
       movq    %rbp, %rsp
       popq    %rbp
-      ret
+      ret                 # the result is in %rax
 
+P_alloc_list:
+      pushq   %rbp
+      movq    %rsp, %rbp
+      pushq   %rdi        # the length of the list
+      andq    $-16, %rsp  # stack alignment;
+      shl     $3, %rdi    # 8 * %rdi
+      addq    $16, %rdi   # %rdi = 16 + 8 * length of the list
+      call    malloc
+      movq    $4, (%rax)
+      movq    -8(%rbp), %rdi
+      movq    %rdi, 8(%rax)
+      movq    %rbp, %rsp
+      popq    %rbp
+      ret                 # the result is in %rax
 P_print_newline:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -142,27 +205,29 @@ P_print_newline:
       ret
 "
 
+
 let data_inline = "
 S_message_int:
   .string    \"%d\"
+S_message_string:
+  .string    \"%s\"
+S_message_None:
+  .string    \"None\"
 S_newline:
   .string    \"\\n\"
-S_StringNone:
-.string    \"None\"
-S_StringTrue:
-.string    \"True\"
-S_StringFalse:
-.string    \"False\"
+S_message_False:
+  .string    \"False\"
+S_message_True:
+  .string    \"True\"
 C_None:
-  .quad   0
+  .quad       0
 C_False:
-  .quad   1
-  .quad   0
+  .quad       1
+  .quad       0
 C_True:
-  .quad   1
-  .quad   1
-
-"  
+  .quad       1
+  .quad       1
+"
 
 
 
@@ -217,6 +282,24 @@ let rec alloc_vars env (s: Ast.tstmt) =
 
 
 
+type string_env = (string, string) Hashtbl.t
+
+let string_env : string_env = Hashtbl.create 16
+
+let new_string =
+  let c = ref 0 in
+  fun s -> incr c;
+    let l = "S_" ^ (string_of_int !c) in
+    Hashtbl.add string_env l s;
+    l
+
+
+let rec fold_i f i acc l =
+  match l with
+  | [] -> acc
+  | x :: r -> fold_i f (i + 1) (f i acc x) r
+
+
 
 let rec compile_expr (e: Ast.texpr) =
   match e with
@@ -229,7 +312,11 @@ let rec compile_expr (e: Ast.texpr) =
     movq (ilab (if b then "C_True" else "C_False")) (reg rdi) 
   | TEvar x -> 
       movq (ind ~ofs:x.v_ofs rbp) (reg rdi)
-  | TEcst _ -> assert false (* TODO *)
+  | TEcst (Cstring s) ->
+    let l = new_string s in
+    movq (ilab l) (reg rdi)
+
+
   
   | TEbinop (binop, e1, e2) -> 
     begin match binop with
@@ -473,14 +560,22 @@ let compile_main (fn, tstmt) =
   compile_stmt l tstmt ++ 
   xorq (reg rax) (reg rax)
 
+
+let inline_strings () =
+  let alloc_string l s acc =
+    label l ++ dquad [3; String.length s] ++ string s ++ acc in
+  Hashtbl.fold alloc_string string_env nop
+
+
+
 let file ?debug:(b=false) (p: Ast.tfile) : X86_64.program =
   debug := b;
   match p with
   | [] -> assert false
   | m :: r ->
-    let cfile = 
+    let cmain = compile_main m ++ leave in
+    let cfile =
       List.fold_left (fun a td -> a ++ compile_tdef td) nop r in
-
-    { text = globl "main" ++ label "main" ++ compile_main m ++
-             leave ++ cfile ++ inline preamble;
-      data = inline data_inline; }
+    { text = globl "main" ++ label "main" ++ cmain ++
+             cfile ++ inline preamble;
+      data = inline data_inline ++ inline_strings (); }

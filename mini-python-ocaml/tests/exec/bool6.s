@@ -3,19 +3,75 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $19, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
+	movq $C_True, %rdi
 	movq %rdi, %rbx
-	movq $4, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
+	movq $C_False, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
-	cqto
-	idivq 8(%rcx)
-	movq %rdx, %rdi
-	call P_alloc_int
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	movq $C_True, %rdi
+	movq %rdi, %rbx
+	movq $C_False, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setne %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	movq $C_True, %rdi
+	movq %rdi, %rbx
+	movq $C_False, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setl %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	movq $C_True, %rdi
+	movq %rdi, %rbx
+	movq $C_False, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setle %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	movq $C_True, %rdi
+	movq %rdi, %rbx
+	movq $C_False, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setg %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	movq $C_True, %rdi
+	movq %rdi, %rbx
+	movq $C_False, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setge %al
+	movzbq %al, %rdi
+	call P_alloc_bool
 	movq %rax, %rdi
 	call P_print
 	call P_print_newline
