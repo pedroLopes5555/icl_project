@@ -1,6 +1,3 @@
-def f(w, a):
-    print(w)
-    return None
+l = [1,2,3,4,5]
 
-
-print(f(10, 20))
+print(l)

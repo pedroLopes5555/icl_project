@@ -1,0 +1,150 @@
+$$$token_invalide
+x && y
+
+$$$erreur_indent1
+def f(x):
+    toto
+  tata
+
+$$$erreur_indent2
+toto
+    tata
+    tutu
+        toto
+    tata
+            tutu
+            tutu2
+        titi
+
+$$$erreur_indent2
+arf
+
+    coucou
+
+       plop
+
+     plif
+
+    olala
+
+$$$chaine_non_fermee1
+salut
+   romain
+   stephane
+   "Melanie
+   Josephine
+
+$$$erreur_indent3
+salut
+#   romain
+        1
+        2
+        3434
+    oulala
+
+$$$constante_trop_grande
+12354687343687435168353213646934321
+
+$$$chaine_non_fermee2
+"coucou les amis
+
+$$$chaine_non_fermee3
+"bonjour \"romain" !"
+
+$$$chaine_non_fermee4
+"chaine
+sur plusieurs
+lignes mal
+fermee
+
+$$$mauvais_commentaire
+truc # Ceci est un commentaire
+qui continue sur la deuxieme ligne !!
+
+$$$token_invalide2
+x := 42
+
+$$$token_invalide3
+@x
+
+$$$fichier_vide
+
+$$$stmt_manquant
+def a () : 1
+
+
+$$$def_apres_stmt
+1
+def a () : 1
+
+
+$$$def_entre_stmt
+def a () : 1
+1
+def a () : 1
+
+
+$$$liste_args_invalide1
+def a (,x,x) : 1
+1
+
+
+$$$liste_args_invalide2
+def a (x,x,) : 1
+1
+
+
+$$$liste_args_invalide3
+def a (x,,x) : 1
+1
+
+
+$$$liste_args_invalide4
+def a (,) : 1
+1
+
+
+$$$liste_args_invalide5
+def a (x x) : 1
+1
+
+
+$$$def_fonction_vide
+def a () :
+1
+
+
+$$$val_gauche_invalide
+1 = 1
+
+
+$$$bloc_invalide
+if 1 : for x in 1 : 1
+
+
+$$$liste_invalide1
+[,x,x]
+
+
+$$$liste_invalide2
+[x,x,]
+
+
+$$$liste_invalide3
+[x,,x]
+
+
+$$$liste_invalide4
+[,]
+
+
+$$$liste_invalide5
+[x x]
+
+
+$$$parentheses_vides
+()
+
+
+$$$acces_liste_invalide
+x[x,x]
