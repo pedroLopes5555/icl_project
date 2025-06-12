@@ -24,6 +24,51 @@ E_test:
       movq    %rbp, %rsp
       popq    %rbp
       ret
+P_print_list:
+    pushq   %rbp
+    movq    %rsp, %rbp
+    pushq   %r12           # save callee-saved registers
+    pushq   %r13
+    pushq   %r14
+
+    movq    %rdi, %r12     # %r12 = list base address
+
+    movq    8(%r12), %r13  # %r13 = length of list
+    xorq    %r14, %r14     # %r14 = loop index (i = 0)
+
+.loop_start:
+    cmpq    %r14, %r13     # if i >= length, exit loop
+    jge     .loop_end
+
+    movq    %r14, %rdi
+    shl     $3, %rdi       # offset = i * 8
+    addq    $16, %rdi      # offset = 16 + i * 8
+    addq    %r12, %rdi     # address of list[i]
+    movq    (%rdi), %rdi   # dereference to get actual element pointer
+
+    call    P_print        # print element
+
+    # Optional: print a space (or comma) after each element
+    # unless it’s the last one
+    incq    %r14
+    cmpq    %r14, %r13
+    je      .no_separator
+
+    movq    $S_space, %rdi
+    xorq    %rax, %rax
+    call    printf
+
+.no_separator:
+    jmp     .loop_start
+
+.loop_end:
+    popq    %r14
+    popq    %r13
+    popq    %r12
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
 P_print_None:
       pushq   %rbp
       movq    %rsp, %rbp
@@ -87,6 +132,8 @@ P_print:
       je      2f
       cmpq    $3, (%rdi) # is this String?
       je      3f
+      cmpq    $4, (%rdi) # is this List?
+      je      4f
 0:
       call    P_print_None
       jmp     E_print
@@ -100,6 +147,8 @@ P_print:
 2:
       movq    8(%rdi), %rdi
       call    P_print_int
+4:
+      call    P_print_list
 E_print:
       movq    %rbp, %rsp
       popq    %rbp
@@ -196,6 +245,9 @@ S_message_False:
   .string    "False"
 S_message_True:
   .string    "True"
+S_space:
+    .string " "
+
 C_None:
   .quad       0
 C_False:

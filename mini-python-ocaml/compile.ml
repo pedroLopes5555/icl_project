@@ -611,7 +611,42 @@ let rec compile_expr (e: Ast.texpr) =
       movq (reg rax) (reg rdi)
 
 
-  | TErange _ -> assert false (* TODO *)
+  | TErange e1_expr ->
+    let loop_label = new_label () in
+    let end_label = new_label () in
+
+    
+    compile_expr e1_expr ++                    
+    movq (reg rdi) (reg rbx) ++                
+
+    
+    movq (ind ~ofs:8 rbx) (reg rdi) ++         
+    call "P_alloc_list" ++
+    movq (reg rax) (reg rdi) ++                
+
+    
+    xorq (reg rdx) (reg rdx) ++               
+
+    label loop_label ++
+    cmpq (ind ~ofs:8 rbx) (reg rdx) ++         
+    jge end_label ++
+
+    
+    movq (reg rdx) (reg rsi) ++
+    call "P_alloc_int" ++
+    movq (reg rax) (reg r8) ++                 
+
+   
+    movq (reg rdx) (reg r9) ++                 
+    shlq (imm 3) (reg r9) ++                   
+    addq (imm 16) (reg r9) ++                  
+    addq (reg rdi) (reg r9) ++                 
+    movq (reg r8) (ind r9) ++            
+
+    incq (reg rdx) ++
+    jmp loop_label ++
+
+    label end_label
 
 
   | TEget (e1, e2) ->
