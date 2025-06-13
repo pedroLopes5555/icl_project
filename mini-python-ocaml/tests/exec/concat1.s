@@ -237,6 +237,93 @@ P_print_newline:
       movq    %rbp, %rsp
       popq    %rbp
       ret
+
+
+# NEW THINGS --------------------------------------------------
+
+P_get_iter:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    movq    $16, %rdi          # size of iterator struct = 2 * 8 bytes
+    call    malloc             # allocate 16 bytes, result in %rax
+
+    movq    %rdi, -8(%rbp)     # save original list pointer (%rdi) on stack
+    movq    %rax, %rdi         # %rdi = allocated iterator
+
+    movq    -8(%rbp), %rax     # reload list pointer into %rax
+    movq    %rax, 0(%rdi)      # store list pointer into iterator[0]
+
+    movq    $0, 8(%rdi)        # initialize index to 0
+
+    movq    %rdi, %rax         # return iterator pointer in %rax
+
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+P_iter_next:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    # load iterator fields
+    movq    0(%rdi), %rax      # %rax = list pointer
+    movq    8(%rdi), %rcx      # %rcx = current index
+
+    # load length of list
+    movq    8(%rax), %rdx      # %rdx = length
+
+    cmpq    %rcx, %rdx         # compare index vs length
+    jge     .no_more_elements
+
+    # calculate element address: list + 16 + 8*index
+    leaq    16(%rax), %rsi
+    movq    %rcx, %r8
+    shl     $3, %r8            # index * 8
+    addq    %r8, %rsi          # pointer to element[index]
+
+    movq    (%rsi), %rax       # load element pointer
+
+    # increment iterator index
+    incq    8(%rdi)
+
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+.no_more_elements:
+    # free iterator structure, since done iterating
+    movq    %rdi, %rdi
+    call    free
+
+    movq    $0, %rax           # return NULL (0)
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+
+P_set_item:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    # unbox int key: key value stored at 8(%rsi)
+    movq    8(%rsi), %rcx
+
+    # calculate address of list element: container + 16 + 8*key
+    leaq    16(%rdi), %r8
+    movq    %rcx, %r9
+    shl     $3, %r9
+    addq    %r9, %r8
+
+    # store value pointer into element[key]
+    movq    %rdx, (%r8)
+
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+# NEW THINGS --------------------------------------------------
+
 	.data
 
 S_message_int:

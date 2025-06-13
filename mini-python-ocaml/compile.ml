@@ -252,6 +252,93 @@ P_print_newline:
       movq    %rbp, %rsp
       popq    %rbp
       ret
+
+
+# NEW THINGS --------------------------------------------------
+
+P_get_iter:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    movq    $16, %rdi          # size of iterator struct = 2 * 8 bytes
+    call    malloc             # allocate 16 bytes, result in %rax
+
+    movq    %rdi, -8(%rbp)     # save original list pointer (%rdi) on stack
+    movq    %rax, %rdi         # %rdi = allocated iterator
+
+    movq    -8(%rbp), %rax     # reload list pointer into %rax
+    movq    %rax, 0(%rdi)      # store list pointer into iterator[0]
+
+    movq    $0, 8(%rdi)        # initialize index to 0
+
+    movq    %rdi, %rax         # return iterator pointer in %rax
+
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+P_iter_next:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    # load iterator fields
+    movq    0(%rdi), %rax      # %rax = list pointer
+    movq    8(%rdi), %rcx      # %rcx = current index
+
+    # load length of list
+    movq    8(%rax), %rdx      # %rdx = length
+
+    cmpq    %rcx, %rdx         # compare index vs length
+    jge     .no_more_elements
+
+    # calculate element address: list + 16 + 8*index
+    leaq    16(%rax), %rsi
+    movq    %rcx, %r8
+    shl     $3, %r8            # index * 8
+    addq    %r8, %rsi          # pointer to element[index]
+
+    movq    (%rsi), %rax       # load element pointer
+
+    # increment iterator index
+    incq    8(%rdi)
+
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+.no_more_elements:
+    # free iterator structure, since done iterating
+    movq    %rdi, %rdi
+    call    free
+
+    movq    $0, %rax           # return NULL (0)
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+
+P_set_item:
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    # unbox int key: key value stored at 8(%rsi)
+    movq    8(%rsi), %rcx
+
+    # calculate address of list element: container + 16 + 8*key
+    leaq    16(%rdi), %r8
+    movq    %rcx, %r9
+    shl     $3, %r9
+    addq    %r9, %r8
+
+    # store value pointer into element[key]
+    movq    %rdx, (%r8)
+
+    movq    %rbp, %rsp
+    popq    %rbp
+    ret
+
+# NEW THINGS --------------------------------------------------
+
 "
 
 
@@ -582,8 +669,29 @@ let rec compile_expr (e: Ast.texpr) =
     end
 
 
-  | TEunop (_, _) -> assert false (* TODO *)
+  (* NEW THINGS -------------------------------------------------------------------- *)
+  | TEunop (op, e) ->
+    compile_expr e ++                  (* result in %rdi *)
+    movq (reg rdi) (reg rbx) ++        (* save boxed e in %rbx *)
+    begin match op with
+    | Uneg ->
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* unbox e into %rax *)
+        negq (reg rax) ++                   (* negate it *)
+        movq (reg rax) (reg rdi) ++
+        call "P_alloc_int" ++
+        movq (reg rax) (reg rdi)
 
+    | Unot ->
+        movq (ind ~ofs:8 rbx) (reg rax) ++  (* unbox e into %rax *)
+        cmpq (imm 0) (reg rax) ++           (* compare with 0 *)
+        movq (imm 0) (reg rdi) ++           (* assume false *)
+        sete (reg al) ++                    (* set %al = 1 if zero *)
+        movzbq (reg al) rax ++        (* zero-extend to %rax *)
+        movq (reg rax) (reg rdi) ++
+        call "P_alloc_int" ++
+        movq (reg rax) (reg rdi)
+    end
+    (* NEW THINGS -------------------------------------------------------------------- *)
 
   | TEcall (fn, el) -> 
     (*method to alocate*)  
@@ -641,7 +749,7 @@ let rec compile_expr (e: Ast.texpr) =
     shlq (imm 3) (reg r9) ++                   
     addq (imm 16) (reg r9) ++                  
     addq (reg rdi) (reg r9) ++                 
-    movq (reg r8) (ind r9) ++            
+    movq (reg r8) (ind r9) ++           
 
     incq (reg rdx) ++
     jmp loop_label ++
@@ -676,6 +784,7 @@ let rec compile_stmt exit_lbl (s: Ast.tstmt) =
       label l_else ++
       compile_stmt exit_lbl s2 ++
       label l_end
+
   | TSreturn e -> 
       compile_expr e ++
       movq (reg rdi) (reg rax) ++
@@ -683,18 +792,63 @@ let rec compile_stmt exit_lbl (s: Ast.tstmt) =
       (*return the value of e in rax*)
       (*jmp exit_lbl is not necessary, but it is a good practice*)
       (*to have a label to return to, even if it is the end of the function*)
+
   | TSassign (x, e) -> 
       let ofs = x.v_ofs in (*x.v_ofs <> -1*)
       compile_expr e ++ (*value of e in %rdi*)
       movq (reg rdi) (ind ~ofs rbp)
+
   | TSprint e ->
       compile_expr e ++ call "P_print" ++ call "P_print_newline"
   | TSblock sl ->
       List.fold_left (fun c s -> c ++ compile_stmt exit_lbl s) nop sl
-  | TSfor (_, _, _) -> assert false (* TODO *)
+
+  (* NEW THINGS -------------------------------------------------------------------- *)
+  | TSfor (var, iterable_expr, body_stmt) ->
+      let loop_start = new_label () in
+      let loop_end = new_label () in
+
+      compile_expr iterable_expr ++                  (* iterable in %rdi *)
+      movq (reg rdi) (reg rbx) ++                    (* save iterable in %rbx *)
+
+      movq (reg rbx) (reg rdi) ++
+      call "P_get_iter" ++                           (* iterator in %rax *)
+      movq (reg rax) (reg r15) ++                    (* save iterator in %r15 *)
+
+      label loop_start ++
+      movq (reg r15) (reg rdi) ++
+      call "P_iter_next" ++                          (* next elem in %rax *)
+      testq (reg rax) (reg rax) ++
+      je loop_end ++                                 (* if no more elems, break *)
+
+      movq (reg rax) (ind ~ofs:var.v_ofs rbp) ++    (* assign to var *)
+
+      compile_stmt exit_lbl body_stmt ++             (* compile loop body *)
+
+      jmp loop_start ++
+
+      label loop_end
+  (* NEW THINGS -------------------------------------------------------------------- *)
+
   | TSeval e -> 
     compile_expr e 
-  | TSset (_, _, _) -> assert false (* TODO *)
+
+  (* NEW THINGS -------------------------------------------------------------------- *)
+  | TSset (e1, e2, e3) ->
+      compile_expr e1 ++     (* container in %rdi *)
+      pushq (reg rdi) ++
+
+      compile_expr e2 ++     (* key/index in %rdi *)
+      pushq (reg rdi) ++
+
+      compile_expr e3 ++     (* value in %rdi *)
+
+      movq (reg rdi) (reg rsi) ++  (* value -> %rsi *)
+      popq rdi ++            (* key/index -> %rdi *)
+      popq rdx ++            (* container -> %rdx *)
+
+      call "P_set_item"
+  (* NEW THINGS -------------------------------------------------------------------- *)
 
 let compile_tdef (fn, tstmt) =
 (* allocate all the params in fn.fnparams*)

@@ -3,39 +3,20 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $0, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	pushq %rdi
-	call F_loop
-	addq $8, %rsp
+	call F_main
+	addq $0, %rsp
 	movq %rax, %rdi
 	xorq %rax, %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-F_loop:
+F_print_row:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq 16(%rbp), %rdi
-	call P_print
-	call P_print_newline
-	movq 16(%rbp), %rdi
-	movq %rdi, %rbx
-	movq $3, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	movq %rdi, %rcx
-	movq 8(%rbx), %rax
-	cmpq 8(%rcx), %rax
-	setl %al
-	movzbq %al, %rdi
-	call P_alloc_bool
-	movq %rax, %rdi
-	call P_test
-	testq %rax, %rax
-	jz L_3
-	movq 16(%rbp), %rdi
+	andq $-16, %rsp
+	movq $S_1, %rdi
+	movq %rdi, -8(%rbp)
+	movq 24(%rbp), %rdi
 	movq %rdi, %rbx
 	movq $1, %rdi
 	call P_alloc_int
@@ -46,14 +27,304 @@ F_loop:
 	movq %rax, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	pushq %rdi
-	call F_loop
-	addq $8, %rsp
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
 	movq %rax, %rdi
-	jmp L_4
+	xorq %rdx, %rdx
+L_7:
+	cmpq 8(%rbx), %rdx
+	jge L_8
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_7
+L_8:
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
 L_3:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_4
+	movq %rax, -16(%rbp)
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq -16(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	call P_test
+	testq %rax, %rax
+	jz L_5
+	movq $S_3, %rdi
+	movq %rdi, %rbx
+	movq -8(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	addq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	jmp L_6
+L_5:
+	movq $S_2, %rdi
+	movq %rdi, %rbx
+	movq -8(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	addq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+L_6:
+	jmp L_3
 L_4:
+	movq -8(%rbp), %rdi
+	call P_print
+	call P_print_newline
 L_2:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_compute_row:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-8, %rsp
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_test
+	testq %rax, %rax
+	jz L_10
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	jmp L_11
+L_10:
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 24(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	subq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	addq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq $7, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cqto
+	idivq 8(%rcx)
+	movq %rdx, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+L_11:
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	movq 24(%rbp), %rdi
+	pushq %rdi
+	movq -8(%rbp), %rdi
+	movq %rdi, %rsi
+	popq %rdi
+	popq %rdx
+	call P_set_item
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	setg %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_test
+	testq %rax, %rax
+	jz L_12
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	subq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	call F_compute_row
+	addq $16, %rsp
+	movq %rax, %rdi
+	jmp L_13
+L_12:
+L_13:
+L_9:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_main:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-24, %rsp
+	movq $40, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	movq -8(%rbp), %rdi
+	movq %rdi, %rbx
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	addq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
+	movq %rax, %rdi
+	xorq %rdx, %rdx
+L_15:
+	cmpq 8(%rbx), %rdx
+	jge L_16
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_15
+L_16:
+	movq %rdi, -16(%rbp)
+	movq -8(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
+	movq %rax, %rdi
+	xorq %rdx, %rdx
+L_19:
+	cmpq 8(%rbx), %rdx
+	jge L_20
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_19
+L_20:
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
+L_17:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_18
+	movq %rax, -24(%rbp)
+	movq -16(%rbp), %rdi
+	pushq %rdi
+	movq -24(%rbp), %rdi
+	pushq %rdi
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rsi
+	popq %rdi
+	popq %rdx
+	call P_set_item
+	movq -24(%rbp), %rdi
+	pushq %rdi
+	movq -16(%rbp), %rdi
+	pushq %rdi
+	call F_compute_row
+	addq $16, %rsp
+	movq %rax, %rdi
+	movq -24(%rbp), %rdi
+	pushq %rdi
+	movq -16(%rbp), %rdi
+	pushq %rdi
+	call F_print_row
+	addq $16, %rsp
+	movq %rax, %rdi
+	jmp L_17
+L_18:
+L_14:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -388,3 +659,12 @@ C_False:
 C_True:
   .quad       1
   .quad       1
+S_2:
+	.quad 3, 1
+	.string "0"
+S_3:
+	.quad 3, 1
+	.string "*"
+S_1:
+	.quad 3, 0
+	.string ""

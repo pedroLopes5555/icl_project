@@ -3,43 +3,98 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
+	andq $-8, %rsp
+	movq $S_1, %rdi
+	call P_print
+	call P_print_newline
+	movq $42, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $11, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
 	movq $0, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	pushq %rdi
-	call F_loop
+	movq $4, %rdi
+	call P_alloc_list
+	popq %rdi
+	movq %rdi, 16(%rax)
+	popq %rdi
+	movq %rdi, 24(%rax)
+	popq %rdi
+	movq %rdi, 32(%rax)
+	popq %rdi
+	movq %rdi, 40(%rax)
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
+L_2:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_3
+	movq %rax, -8(%rbp)
+	movq -8(%rbp), %rdi
+	pushq %rdi
+	call F_fib
 	addq $8, %rsp
 	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	jmp L_2
+L_3:
 	xorq %rax, %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-F_loop:
+F_fibaux:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq 16(%rbp), %rdi
-	call P_print
-	call P_print_newline
-	movq 16(%rbp), %rdi
+	movq 32(%rbp), %rdi
 	movq %rdi, %rbx
-	movq $3, %rdi
+	movq $0, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
 	cmpq 8(%rcx), %rax
-	setl %al
+	sete %al
 	movzbq %al, %rdi
 	call P_alloc_bool
 	movq %rax, %rdi
 	call P_test
 	testq %rax, %rax
-	jz L_3
+	jz L_5
 	movq 16(%rbp), %rdi
+	movq %rdi, %rax
+	jmp L_4
+	jmp L_6
+L_5:
+	movq 32(%rbp), %rdi
 	movq %rdi, %rbx
 	movq $1, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	subq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 24(%rbp), %rdi
 	movq %rdi, %rcx
 	movq 8(%rbx), %rax
 	addq 8(%rcx), %rax
@@ -47,13 +102,37 @@ F_loop:
 	call P_alloc_int
 	movq %rax, %rdi
 	pushq %rdi
-	call F_loop
-	addq $8, %rsp
+	movq 24(%rbp), %rdi
+	pushq %rdi
+	call F_fibaux
+	addq $24, %rsp
 	movq %rax, %rdi
+	movq %rdi, %rax
 	jmp L_4
-L_3:
+L_6:
 L_4:
-L_2:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_fib:
+	pushq %rbp
+	movq %rsp, %rbp
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_fibaux
+	addq $24, %rsp
+	movq %rax, %rdi
+	movq %rdi, %rax
+	jmp L_7
+L_7:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -388,3 +467,6 @@ C_False:
 C_True:
   .quad       1
   .quad       1
+S_1:
+	.quad 3, 43
+	.string "quelques valeurs de la suite de Fibonacci :"

@@ -3,57 +3,26 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $0, %rdi
+	andq $-8, %rsp
+	movq $42, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
-	pushq %rdi
-	call F_loop
-	addq $8, %rsp
-	movq %rax, %rdi
-	xorq %rax, %rax
-	movq %rbp, %rsp
-	popq %rbp
-	ret
-F_loop:
-	pushq %rbp
-	movq %rsp, %rbp
-	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
+L_2:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_3
+	movq %rax, -8(%rbp)
+	movq -8(%rbp), %rdi
 	call P_print
 	call P_print_newline
-	movq 16(%rbp), %rdi
-	movq %rdi, %rbx
-	movq $3, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	movq %rdi, %rcx
-	movq 8(%rbx), %rax
-	cmpq 8(%rcx), %rax
-	setl %al
-	movzbq %al, %rdi
-	call P_alloc_bool
-	movq %rax, %rdi
-	call P_test
-	testq %rax, %rax
-	jz L_3
-	movq 16(%rbp), %rdi
-	movq %rdi, %rbx
-	movq $1, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	movq %rdi, %rcx
-	movq 8(%rbx), %rax
-	addq 8(%rcx), %rax
-	movq %rax, %rdi
-	call P_alloc_int
-	movq %rax, %rdi
-	pushq %rdi
-	call F_loop
-	addq $8, %rsp
-	movq %rax, %rdi
-	jmp L_4
+	jmp L_2
 L_3:
-L_4:
-L_2:
+	xorq %rax, %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret

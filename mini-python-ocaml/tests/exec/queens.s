@@ -3,26 +3,58 @@
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $0, %rdi
+	andq $-8, %rsp
+	movq $9, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
+	movq %rax, %rdi
+	xorq %rdx, %rdx
+L_4:
+	cmpq 8(%rbx), %rdx
+	jge L_5
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_4
+L_5:
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
+L_2:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_3
+	movq %rax, -8(%rbp)
+	movq -8(%rbp), %rdi
 	pushq %rdi
-	call F_loop
+	call F_q
 	addq $8, %rsp
 	movq %rax, %rdi
+	call P_print
+	call P_print_newline
+	jmp L_2
+L_3:
 	xorq %rax, %rax
 	movq %rbp, %rsp
 	popq %rbp
 	ret
-F_loop:
+F_abs:
 	pushq %rbp
 	movq %rsp, %rbp
 	movq 16(%rbp), %rdi
-	call P_print
-	call P_print_newline
-	movq 16(%rbp), %rdi
 	movq %rdi, %rbx
-	movq $3, %rdi
+	movq $0, %rdi
 	call P_alloc_int
 	movq %rax, %rdi
 	movq %rdi, %rcx
@@ -34,8 +66,260 @@ F_loop:
 	movq %rax, %rdi
 	call P_test
 	testq %rax, %rax
-	jz L_3
+	jz L_7
 	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rax
+	negq %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rax
+	jmp L_6
+	jmp L_8
+L_7:
+	movq 16(%rbp), %rdi
+	movq %rdi, %rax
+	jmp L_6
+L_8:
+L_6:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_check:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-8, %rsp
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
+	movq %rax, %rdi
+	xorq %rdx, %rdx
+L_16:
+	cmpq 8(%rbx), %rdx
+	jge L_17
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_16
+L_17:
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
+L_10:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_11
+	movq %rax, -8(%rbp)
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 24(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq -8(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rax
+	testq %rax, %rax
+	jne L_14
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 24(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq -8(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	shlq $3, %rcx
+	addq %rcx, %rax
+	movq 8(%rax), %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	subq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_abs
+	addq $8, %rsp
+	movq %rax, %rdi
+	movq %rdi, %rbx
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq -8(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	subq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	call F_abs
+	addq $8, %rsp
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	movq %rdi, %rcx
+	movq 8(%rcx), %rax
+	testq %rax, %rax
+	jne L_14
+	movq $0, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	jmp L_15
+L_14:
+	movq $1, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+L_15:
+	call P_test
+	testq %rax, %rax
+	jz L_12
+	movq $C_False, %rdi
+	movq %rdi, %rax
+	jmp L_9
+	jmp L_13
+L_12:
+L_13:
+	jmp L_10
+L_11:
+	movq $C_True, %rdi
+	movq %rdi, %rax
+	jmp L_9
+L_9:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_count:
+	pushq %rbp
+	movq %rsp, %rbp
+	andq $-16, %rsp
+	movq 24(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 32(%rbp), %rdi
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	cmpq 8(%rcx), %rax
+	sete %al
+	movzbq %al, %rdi
+	call P_alloc_bool
+	movq %rax, %rdi
+	call P_test
+	testq %rax, %rax
+	jz L_19
+	movq $1, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, %rax
+	jmp L_18
+	jmp L_20
+L_19:
+L_20:
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	movq 32(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
+	movq %rax, %rdi
+	xorq %rdx, %rdx
+L_25:
+	cmpq 8(%rbx), %rdx
+	jge L_26
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_25
+L_26:
+	movq %rdi, %rbx
+	movq %rbx, %rdi
+	call P_get_iter
+	movq %rax, %r15
+L_21:
+	movq %r15, %rdi
+	call P_iter_next
+	testq %rax, %rax
+	je L_22
+	movq %rax, -16(%rbp)
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	movq 24(%rbp), %rdi
+	pushq %rdi
+	movq -16(%rbp), %rdi
+	movq %rdi, %rsi
+	popq %rdi
+	popq %rdx
+	call P_set_item
+	movq 32(%rbp), %rdi
+	pushq %rdi
+	movq 24(%rbp), %rdi
+	pushq %rdi
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	call F_check
+	addq $24, %rsp
+	movq %rax, %rdi
+	call P_test
+	testq %rax, %rax
+	jz L_23
+	movq -8(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 32(%rbp), %rdi
+	pushq %rdi
+	movq 24(%rbp), %rdi
 	movq %rdi, %rbx
 	movq $1, %rdi
 	call P_alloc_int
@@ -47,13 +331,66 @@ F_loop:
 	call P_alloc_int
 	movq %rax, %rdi
 	pushq %rdi
-	call F_loop
-	addq $8, %rsp
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	call F_count
+	addq $24, %rsp
 	movq %rax, %rdi
-	jmp L_4
-L_3:
-L_4:
-L_2:
+	movq %rdi, %rcx
+	movq 8(%rbx), %rax
+	addq 8(%rcx), %rax
+	movq %rax, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	movq %rdi, -8(%rbp)
+	jmp L_24
+L_23:
+L_24:
+	jmp L_21
+L_22:
+	movq -8(%rbp), %rdi
+	movq %rdi, %rax
+	jmp L_18
+L_18:
+	movq %rbp, %rsp
+	popq %rbp
+	ret
+F_q:
+	pushq %rbp
+	movq %rsp, %rbp
+	movq 16(%rbp), %rdi
+	pushq %rdi
+	movq $0, %rdi
+	call P_alloc_int
+	movq %rax, %rdi
+	pushq %rdi
+	movq 16(%rbp), %rdi
+	movq %rdi, %rbx
+	movq 8(%rbx), %rdi
+	call P_alloc_list
+	movq %rax, %rdi
+	xorq %rdx, %rdx
+L_28:
+	cmpq 8(%rbx), %rdx
+	jge L_29
+	movq %rdx, %rsi
+	call P_alloc_int
+	movq %rax, %r8
+	movq %rdx, %r9
+	shlq $3, %r9
+	addq $16, %r9
+	addq %rdi, %r9
+	movq %r8, 0(%r9)
+	incq %rdx
+	jmp L_28
+L_29:
+	pushq %rdi
+	call F_count
+	addq $24, %rsp
+	movq %rax, %rdi
+	movq %rdi, %rax
+	jmp L_27
+L_27:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
